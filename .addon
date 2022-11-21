@@ -3,7 +3,7 @@
   "Type": "addon",
   "Org": "alphaceph",
   "Ident": "stubborn_birb",
-  "Tags": "runtime,entity",
+  "Tags": "runtime,npc",
   "Schema": 1,
   "HasAssets": true,
   "AssetsPath": "",
