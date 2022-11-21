@@ -39,14 +39,17 @@ namespace sbox.Community
 			ReturningTheSpawnPoint
 		}
 
-		public Stubborn_Birb() { }
+		public Stubborn_Birb() { Spawn(); }
 
 		public override void Spawn()
 		{
+			if ( IsClient )
+				return;
+
 			mission = birb_Task.WaitToSpawn;
 
 			var target = findTarget();
-			if(!target.Item1)
+			if ( !target.Item1 )
 			{
 				Delete();
 				Log.Error( "There is no any player!" );
@@ -54,7 +57,7 @@ namespace sbox.Community
 			}
 
 			targetPlayer = target.Item2;
-			
+
 			var location = findLocationToSpawn();
 			if ( !location.Item1 )
 			{
@@ -69,9 +72,9 @@ namespace sbox.Community
 
 			wanderLimitRandom = Rand.Int( 5, 20 );
 
-			Position = spawnPoint;
-
 			base.Spawn();
+
+			Position = spawnPoint;
 
 			Predictable = true;
 
@@ -88,7 +91,7 @@ namespace sbox.Community
 			_ = pigeonSounds();
 		}
 
-		private (bool, Vector3) findLocationToSpawn(Vector3? pos = null, int radius = 10000)
+		private (bool, Vector3) findLocationToSpawn( Vector3? pos = null, int radius = 10000 )
 		{
 			var th = Rand.Int( 0, 359 );
 			var pi = Rand.Int( -180, -180 );
@@ -99,15 +102,15 @@ namespace sbox.Community
 
 			for ( int i = 1; i < tryToFind; i++ )
 			{
-				var randRadius = Rand.Float( radius / (i/10).Clamp(1, tryToFind ) ).Clamp(100f, radius);
+				var randRadius = Rand.Float( radius / (i / 10).Clamp( 1, tryToFind ) ).Clamp( 100f, radius );
 
 				// Random vec3 inside sphere (except z is always abs)
-				var VecInside = new Vector3( getPos.x + pos.GetValueOrDefault(Vector3.Zero).x + MathF.Cos( MathX.DegreeToRadian( th ) ) * MathF.Cos( MathX.DegreeToRadian( pi ) ), getPos.y + MathF.Sin( MathX.DegreeToRadian( pi ) ), getPos.z + MathF.Abs(MathF.Sin( MathX.DegreeToRadian( th ) ) * MathF.Cos( MathX.DegreeToRadian( pi ) ) ) ) * randRadius; 
+				var VecInside = new Vector3( getPos.x + pos.GetValueOrDefault( Vector3.Zero ).x + MathF.Cos( MathX.DegreeToRadian( th ) ) * MathF.Cos( MathX.DegreeToRadian( pi ) ), getPos.y + MathF.Sin( MathX.DegreeToRadian( pi ) ), getPos.z + MathF.Abs( MathF.Sin( MathX.DegreeToRadian( th ) ) * MathF.Cos( MathX.DegreeToRadian( pi ) ) ) ) * randRadius;
 
-				if(isReachable( from:VecInside ))
+				if ( isReachable( from: VecInside ) )
 					return (true, VecInside);
 			}
-			
+
 			return (false, Vector3.Zero);
 		}
 
@@ -120,26 +123,26 @@ namespace sbox.Community
 
 			var pickedply = players.ToList()[Rand.Int( players.Count() - 1 )];
 
-			return (true, (AnimatedEntity) pickedply);
+			return (true, (AnimatedEntity)pickedply);
 		}
 
-		private bool isReachable(Vector3? from = null, Vector3? to = null, bool use_cache = false)
+		private bool isReachable( Vector3? from = null, Vector3? to = null, bool use_cache = false )
 		{
-			if ( use_cache && lastReaching < Time.Now)
+			if ( use_cache && lastReaching < Time.Now )
 				return !lastReach;
 
 			var tr = Trace.Ray( from ?? Position, to ?? targetPlayer.Position )
 			.Ignore( this )
 			.Ignore( targetPlayer )
 			.Run();
-			
+
 			lastReach = tr.Hit;
 			lastReaching = Time.Now + 1f;
 
 			return !lastReach;
 		}
 
-		private void follow( bool wander = false, bool gotohome = false)
+		private void follow( bool wander = false, bool gotohome = false )
 		{
 			if ( wander )
 			{
@@ -158,15 +161,15 @@ namespace sbox.Community
 			Rotation = substracted.ToRotation();
 			Position = Position.LerpTo( wander ? wanderPos : (gotohome ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z))), gotohome ? Time.Delta / 10f : Time.Delta );
 		}
-		
-		private bool isCloseToTheTarget(bool home = false) => Position.DistanceSquared( home ? spawnPoint : (targetPlayer.Position + ( Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z)) ) < (home ? (500 * 500) : (20 * 20)); //GetAngle
+
+		private bool isCloseToTheTarget( bool home = false ) => Position.DistanceSquared( home ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z)) ) < (home ? (500 * 500) : (20 * 20)); //GetAngle
 
 		private void doPiss()
 		{
-			if( pissingTime < Time.Now)
+			if ( pissingTime < Time.Now )
 			{
 				pissEffects();
-				pissEffects_clside(To.Single(targetPlayer));
+				pissEffects_clside( To.Single( targetPlayer ) );
 				mission = birb_Task.ReturningTheSpawnPoint;
 				Parent = null;
 			}
@@ -181,16 +184,17 @@ namespace sbox.Community
 
 			Particles.Create( "particles/impact.flesh.vpcf", info.Position );
 
-			if (health <= 0)
+			if ( health <= 0 )
 			{
-				Sound.FromWorld( To.Everyone, "amb_nature_c17_pigeons_07_death", info.Position ).SetVolume(10f);
+				Sound.FromWorld( To.Everyone, "amb_nature_c17_pigeons_07_death", info.Position ).SetVolume( 10f );
 				Particles.Create( "particles/break/break.cardboard.vpcf", info.Position );
 
 				Delete();
 			}
 		}
 
-		private void pissEffects() {
+		private void pissEffects()
+		{
 
 			var pissPP = new PostProcessingEntity
 			{
@@ -199,19 +203,19 @@ namespace sbox.Community
 			pissPP.FadeTime = 0.5f;
 			pissPP.Owner = targetPlayer;
 			pissPP.Transmit = TransmitType.Owner;
-			pissPP.DeleteAsync(5);
+			pissPP.DeleteAsync( 5 );
 
-			PlaySound( "birb_poop" ).SetVolume( 1.5f ); 
+			PlaySound( "birb_poop" ).SetVolume( 1.5f );
 		}
 
 		[ClientRpc]
 		public static void pissEffects_clside()
 		{
 
-			if ( pissPanel == null || !pissPanel.IsValid())
-			{ 
+			if ( pissPanel == null || !pissPanel.IsValid() )
+			{
 				pissPanel = Local.Hud.FindRootPanel().Add.Panel();
-				pissPanel.Style.Width = Length.Fraction(1);
+				pissPanel.Style.Width = Length.Fraction( 1 );
 				pissPanel.Style.Height = Length.Fraction( 1 );
 			}
 
@@ -252,7 +256,7 @@ namespace sbox.Community
 				pissPanel.Style.Opacity = (cleanEffectsTime - Time.Now).Clamp( 0f, 1f );
 				await Local.Pawn.Task.Delay( 10 );
 			}
-			if( pissPanel.IsValid())
+			if ( pissPanel.IsValid() )
 			{
 				pissPanel.DeleteChildren();
 				pissPanel.Delete();
@@ -263,22 +267,22 @@ namespace sbox.Community
 		{
 			while ( IsValid )
 			{
-				PlaySound( pigeonNoises[Rand.Int(pigeonNoises.Count-1)] ).SetVolume( Rand.Float( 0.75f, 1.25f ) ).SetPitch( Rand.Float( 0.9f, 1.15f ) );
-				await Task.Delay( Rand.Int(500,900) );
+				PlaySound( pigeonNoises[Rand.Int( pigeonNoises.Count - 1 )] ).SetVolume( Rand.Float( 0.75f, 1.25f ) ).SetPitch( Rand.Float( 0.9f, 1.15f ) );
+				await Task.Delay( Rand.Int( 500, 900 ) );
 			}
 		}
 
 		[Event.Tick.Server]
 		protected void Tick()
 		{
-			switch(mission)
+			switch ( mission )
 			{
 				case (birb_Task.FlyingToTheTarget):
-					if(isReachable(use_cache:true))
+					if ( isReachable( use_cache: true ) )
 					{
 						// targetPlayer alive checking could be possible
 
-						if(isCloseToTheTarget())
+						if ( isCloseToTheTarget() )
 						{
 							Position = targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z);
 							Parent = targetPlayer;
@@ -287,14 +291,14 @@ namespace sbox.Community
 							mission = birb_Task.DoingJob;
 							PlaySound( "birb_pooping" ).SetVolume( 1.2f );
 
-						}	
+						}
 						else
 							follow();
 					}
 					else
 					{
 						follow( wander: true );
-						if(currentWander > wanderLimitRandom)
+						if ( currentWander > wanderLimitRandom )
 						{
 							Delete();
 							Log.Error( $"Birb seeked out too much to you and gone... (x{currentWander} times)" );
@@ -305,7 +309,7 @@ namespace sbox.Community
 					doPiss();
 					break;
 				case (birb_Task.ReturningTheSpawnPoint):
-					if ( isCloseToTheTarget(home: true) )
+					if ( isCloseToTheTarget( home: true ) )
 						Delete();
 					else
 						follow( gotohome: true );
