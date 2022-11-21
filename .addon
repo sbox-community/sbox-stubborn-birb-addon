@@ -18,11 +18,12 @@
   "CodePath": "/code/",
   "RootNamespace": null,
   "Metadata": {
-    "RenderMaxs": "0,0,0",
-    "RenderMins": "0,0,0",
-    "PhysicsMaxs": "0,0,0",
-    "PhysicsMins": "0,0,0",
-    "PrimaryAsset": "",
-    "ParentPackage": "facepunch.sandbox"
+    "RenderMaxs": "20,20,20",
+    "RenderMins": "-20,-20,-20",
+    "PhysicsMaxs": "20,20,20",
+    "PhysicsMins": "-20,-20,-20",
+    "PrimaryAsset": "sbox.Community.Stubborn_Birb",
+    "ParentPackage": "facepunch.sandbox",
+    "ControlModes": null
   }
 }
