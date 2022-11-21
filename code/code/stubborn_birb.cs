@@ -12,7 +12,7 @@ namespace sbox.Community
 	public partial class Stubborn_Birb : AnimatedEntity
 	{
 		private AnimatedEntity targetPlayer;
-		private Vector3 spawnPoint;
+		private Vector3 spawnPoint = Vector3.Zero;
 		private birb_Task mission = birb_Task.FlyingToTheTarget;
 		private bool lastReach = false;
 		private float lastReaching = 0f;
@@ -22,6 +22,7 @@ namespace sbox.Community
 		private int currentWander = 0;
 		private int wanderLimitRandom = 0;
 		private float health = 100f;
+		private bool spawned = false;
 
 		private static Panel pissPanel;
 
@@ -206,6 +207,7 @@ namespace sbox.Community
 			pissPP.DeleteAsync( 5 );
 
 			PlaySound( "birb_poop" ).SetVolume( 1.5f );
+			targetPlayer.PlaySound( "ba_ohshit03" ).SetVolume( 1.5f );
 		}
 
 		[ClientRpc]
@@ -275,6 +277,14 @@ namespace sbox.Community
 		[Event.Tick.Server]
 		protected void Tick()
 		{
+			//Because npc spawner of sandbox gamemode spawns the birb to the front of you
+			if(!spawned && spawnPoint != Vector3.Zero)
+			{
+				_ = Task.NextPhysicsFrame();
+				Position = spawnPoint;
+				spawned = true;
+			}
+
 			switch ( mission )
 			{
 				case (birb_Task.FlyingToTheTarget):
