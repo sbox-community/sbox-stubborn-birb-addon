@@ -1,4 +1,5 @@
 ﻿using Sandbox;
+using Sandbox.Effects;
 using Sandbox.UI;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ namespace sbox.Community
 		private int wanderLimitRandom = 0;
 		private float health = 100f;
 		private bool spawned = false;
+		//private static ScreenEffects PP;
 
 		private static Panel pissPanel;
 
@@ -94,22 +96,20 @@ namespace sbox.Community
 
 		private (bool, Vector3) findLocationToSpawn( Vector3? pos = null, int radius = 10000 )
 		{
-			var th = Rand.Int( 0, 359 );
-			var pi = Rand.Int( -180, -180 );
+			var getPos = pos.GetValueOrDefault( targetPlayer.Position );
 
-			var getPos = pos.GetValueOrDefault( Vector3.Zero );
-
-			var tryToFind = 1000;
+			var tryToFind = 100;
 
 			for ( int i = 1; i < tryToFind; i++ )
 			{
 				var randRadius = Rand.Float( radius / (i / 10).Clamp( 1, tryToFind ) ).Clamp( 100f, radius );
 
-				// Random vec3 inside sphere (except z is always abs)
-				var VecInside = new Vector3( getPos.x + pos.GetValueOrDefault( Vector3.Zero ).x + MathF.Cos( MathX.DegreeToRadian( th ) ) * MathF.Cos( MathX.DegreeToRadian( pi ) ), getPos.y + MathF.Sin( MathX.DegreeToRadian( pi ) ), getPos.z + MathF.Abs( MathF.Sin( MathX.DegreeToRadian( th ) ) * MathF.Cos( MathX.DegreeToRadian( pi ) ) ) ) * randRadius;
+				var rand = Vector3.Random * randRadius;
 
-				if ( isReachable( from: VecInside ) )
-					return (true, VecInside);
+				var FoundPos = new Vector3( getPos.x + rand.x, getPos.y + rand.y, getPos.z + MathF.Abs(rand.z));
+
+				if ( isReachable( from: FoundPos ) )
+					return (true, FoundPos);
 			}
 
 			return (false, Vector3.Zero);
@@ -159,6 +159,7 @@ namespace sbox.Community
 
 			var substracted = ((wander ? wanderPos : targetPlayer.Position) - Position).EulerAngles;
 			substracted.pitch /= 10;
+			substracted.yaw *= gotohome ? -1 : 1;
 			Rotation = substracted.ToRotation();
 			Position = Position.LerpTo( wander ? wanderPos : (gotohome ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z))), gotohome ? Time.Delta / 10f : Time.Delta );
 		}
@@ -196,15 +197,15 @@ namespace sbox.Community
 
 		private void pissEffects()
 		{
-
-			var pissPP = new PostProcessingEntity
+			//Giving compile error for some reason
+			/*var pissPP = new PostProcessingEntity
 			{
 				PostProcessingFile = "postprocess/birb_poop_effect.vpost"
 			};
 			pissPP.FadeTime = 0.5f;
 			pissPP.Owner = targetPlayer;
 			pissPP.Transmit = TransmitType.Owner;
-			pissPP.DeleteAsync( 5 );
+			pissPP.DeleteAsync( 5 );*/
 
 			PlaySound( "birb_poop" ).SetVolume( 1.5f );
 			targetPlayer.PlaySound( "ba_ohshit03" ).SetVolume( 1.5f );
@@ -247,6 +248,19 @@ namespace sbox.Community
 			piss1.Style.Left = Length.Fraction( Rand.Float( 0f, 0.7f ) );
 			piss1.Style.Top = Length.Fraction( Rand.Float( 0f, 0.7f ) );
 
+			pissPanel.Style.BackdropFilterBlur = 4f;
+			pissPanel.Style.BackdropFilterSaturate = 1.5f;
+			pissPanel.Style.BackdropFilterContrast = 0.8f;
+
+			//Giving compile error for some reason
+			/*PP = new();
+			Map.Camera.AddHook( PP );
+			PP.ChromaticAberration.Scale = 2;
+			PP.Sharpen = 0.5f;
+			PP.Saturation = 1.2f;
+			PP.MotionBlur.Scale = 1.5f;
+			PP.Enabled = true;*/
+
 			_ = pissEffects_think();
 		}
 
@@ -263,6 +277,8 @@ namespace sbox.Community
 				pissPanel.DeleteChildren();
 				pissPanel.Delete();
 			}
+			/*PP.Enabled = false;
+			Map.Camera.RemoveHook( PP );*/
 		}
 
 		private async Task pigeonSounds()
