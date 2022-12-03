@@ -4,6 +4,7 @@ using Sandbox.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace sbox.Community
@@ -24,6 +25,7 @@ namespace sbox.Community
 		private int wanderLimitRandom = 0;
 		private float health = 100f;
 		private bool spawned = false;
+		private bool settled = false;
 		//private static ScreenEffects PP;
 
 		private static Panel pissPanel;
@@ -149,7 +151,7 @@ namespace sbox.Community
 			{
 				if ( wanderTime < Time.Now )
 				{
-					wanderPos = Position + Vector3.Random * 200f;
+					wanderPos = (new Vector3(1,1,0) * (Position + Vector3.Random * 200f)) + (Vector3.Up * (Position + Vector3.Random * 10f)); //Z-axis should be less
 					wanderTime = Time.Now + 3;
 					currentWander++;
 				}
@@ -157,11 +159,10 @@ namespace sbox.Community
 			else
 				currentWander = 0;
 
-			var substracted = ((wander ? wanderPos : targetPlayer.Position) - Position).EulerAngles;
+			var substracted = ((gotohome ? spawnPoint : (wander ? wanderPos : targetPlayer.Position)) - Position).EulerAngles;
 			substracted.pitch /= 10;
-			substracted.yaw *= gotohome ? -1 : 1;
 			Rotation = substracted.ToRotation();
-			Position = Position.LerpTo( wander ? wanderPos : (gotohome ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z))), gotohome ? Time.Delta / 10f : Time.Delta );
+			Position = Position.LerpTo( wander ? wanderPos : (gotohome ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z))), gotohome ? Time.Delta / 10f : (Time.Delta * 2f * (settled ? 20f : 1f)) );
 		}
 
 		private bool isCloseToTheTarget( bool home = false ) => Position.DistanceSquared( home ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z)) ) < (home ? (500 * 500) : (20 * 20)); //GetAngle
@@ -173,8 +174,11 @@ namespace sbox.Community
 				pissEffects();
 				pissEffects_clside( To.Single( targetPlayer ) );
 				mission = birb_Task.ReturningTheSpawnPoint;
-				Parent = null;
+				settled = false;
+				//Parent = null;
 			}
+
+			follow();
 		}
 
 		public override void TakeDamage( DamageInfo info )
@@ -286,7 +290,7 @@ namespace sbox.Community
 			while ( IsValid )
 			{
 				PlaySound( pigeonNoises[Rand.Int( pigeonNoises.Count - 1 )] ).SetVolume( Rand.Float( 0.75f, 1.25f ) ).SetPitch( Rand.Float( 0.9f, 1.15f ) );
-				await Task.Delay( Rand.Int( 500, 900 ) );
+				await Task.Delay( Rand.Int( 600, 1000 ) );
 			}
 		}
 
@@ -311,7 +315,8 @@ namespace sbox.Community
 						if ( isCloseToTheTarget() )
 						{
 							Position = targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z);
-							Parent = targetPlayer;
+							settled = true;
+							//Parent = targetPlayer;
 
 							pissingTime = Time.Now + 5;
 							mission = birb_Task.DoingJob;
@@ -326,7 +331,7 @@ namespace sbox.Community
 						follow( wander: true );
 						if ( currentWander > wanderLimitRandom )
 						{
-							Delete();
+							mission = birb_Task.ReturningTheSpawnPoint;
 							Log.Error( $"Birb seeked out too much to you and gone... (x{currentWander} times)" );
 						}
 					}
