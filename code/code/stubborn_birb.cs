@@ -175,6 +175,7 @@ namespace sbox.Community
 				pissEffects_clside( To.Single( targetPlayer ) );
 				mission = birb_Task.ReturningTheSpawnPoint;
 				settled = false;
+				PhysicsBody.Enabled = true;
 				//Parent = null;
 			}
 
@@ -315,6 +316,7 @@ namespace sbox.Community
 						if ( isCloseToTheTarget() )
 						{
 							Position = targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z);
+							PhysicsBody.Enabled = false;
 							settled = true;
 							//Parent = targetPlayer;
 
