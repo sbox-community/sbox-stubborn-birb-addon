@@ -162,10 +162,10 @@ namespace sbox.Community
 			var substracted = ((gotohome ? spawnPoint : (wander ? wanderPos : targetPlayer.Position)) - Position).EulerAngles;
 			substracted.pitch /= 10;
 			Rotation = substracted.ToRotation();
-			Position = Position.LerpTo( wander ? wanderPos : (gotohome ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z))), gotohome ? Time.Delta / 10f : (Time.Delta * 2f * (settled ? 20f : 1f)) );
+			Position = Position.LerpTo( wander ? wanderPos : (gotohome ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Size.z))), gotohome ? Time.Delta / 10f : (Time.Delta * 2f * (settled ? 20f : 1f)) );
 		}
 
-		private bool isCloseToTheTarget( bool home = false ) => Position.DistanceSquared( home ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z)) ) < (home ? (500 * 500) : (20 * 20)); //GetAngle
+		private bool isCloseToTheTarget( bool home = false ) => Position.DistanceSquared( home ? spawnPoint : (targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Size.z)) ) < (home ? (500 * 500) : (20 * 20)); //GetAngle
 
 		private void doPiss()
 		{
@@ -225,6 +225,7 @@ namespace sbox.Community
 				pissPanel = Local.Hud.FindRootPanel().Add.Panel();
 				pissPanel.Style.Width = Length.Fraction( 1 );
 				pissPanel.Style.Height = Length.Fraction( 1 );
+				pissPanel.Style.Position = PositionMode.Absolute;
 			}
 
 			var piss2 = pissPanel.Add.Panel();
