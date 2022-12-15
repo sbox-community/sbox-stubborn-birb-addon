@@ -16,7 +16,6 @@
   ],
   "HasCode": true,
   "CodePath": "/code/",
-  "RootNamespace": null,
   "Metadata": {
     "RenderMaxs": "20,20,20",
     "RenderMins": "-20,-20,-20",

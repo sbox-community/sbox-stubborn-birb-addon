@@ -1,10 +1,8 @@
 ﻿using Sandbox;
-using Sandbox.Effects;
 using Sandbox.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace sbox.Community
@@ -29,6 +27,7 @@ namespace sbox.Community
 		//private static ScreenEffects PP;
 
 		private static Panel pissPanel;
+		private static float cleanEffectsTime;
 
 		private readonly List<string> pigeonNoises = new() //hla
 		{
@@ -48,7 +47,7 @@ namespace sbox.Community
 
 		public override void Spawn()
 		{
-			if ( IsClient )
+			if ( Game.IsClient )
 				return;
 
 			mission = birb_Task.WaitToSpawn;
@@ -75,7 +74,7 @@ namespace sbox.Community
 
 			mission = birb_Task.FlyingToTheTarget;
 
-			wanderLimitRandom = Rand.Int( 5, 20 );
+			wanderLimitRandom = Game.Random.Int( 5, 20 );
 
 			base.Spawn();
 
@@ -104,7 +103,7 @@ namespace sbox.Community
 
 			for ( int i = 1; i < tryToFind; i++ )
 			{
-				var randRadius = Rand.Float( radius / (i / 10).Clamp( 1, tryToFind ) ).Clamp( 100f, radius );
+				var randRadius = Game.Random.Float( radius / (i / 10).Clamp( 1, tryToFind ) ).Clamp( 100f, radius );
 
 				var rand = Vector3.Random * randRadius;
 
@@ -124,7 +123,7 @@ namespace sbox.Community
 			if ( !players.Any() )
 				return (false, null);
 
-			var pickedply = players.ToList()[Rand.Int( players.Count() - 1 )];
+			var pickedply = players.ToList()[Game.Random.Int( players.Count() - 1 )];
 
 			return (true, (AnimatedEntity)pickedply);
 		}
@@ -187,7 +186,7 @@ namespace sbox.Community
 			base.TakeDamage( info );
 
 			health -= info.Damage;
-			PlaySound( pigeonNoises[0] ).SetVolume( 5f ).SetPitch( Rand.Float( 1.25f, 1.55f ) );
+			PlaySound( pigeonNoises[0] ).SetVolume( 5f ).SetPitch( Game.Random.Float( 1.25f, 1.55f ) );
 
 			Particles.Create( "particles/impact.flesh.vpcf", info.Position );
 
@@ -222,7 +221,7 @@ namespace sbox.Community
 
 			if ( pissPanel == null || !pissPanel.IsValid() )
 			{
-				pissPanel = Local.Hud.FindRootPanel().Add.Panel();
+				pissPanel = Game.RootPanel.Add.Panel();
 				pissPanel.Style.Width = Length.Fraction( 1 );
 				pissPanel.Style.Height = Length.Fraction( 1 );
 				pissPanel.Style.Position = PositionMode.Absolute;
@@ -232,27 +231,29 @@ namespace sbox.Community
 			piss2.Style.Position = PositionMode.Absolute;
 			piss2.Style.BackgroundImage = Texture.Load( FileSystem.Mounted, "materials/birb_poop/poop2.png" );
 			piss2.Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
-			piss2.Style.Opacity = Rand.Float( 0.7f, 0.9f );
+			piss2.Style.Opacity = Game.Random.Float( 0.7f, 0.9f );
+			piss2.Style.Order = Game.Random.Int( 999999 );
 
-			var piss2Size = Rand.Float( 0.6f, 0.9f );
+			var piss2Size = Game.Random.Float( 0.6f, 0.9f );
 			piss2.Style.Width = Length.Fraction( piss2Size );
 			piss2.Style.Height = Length.Fraction( piss2Size );
 
-			piss2.Style.Left = Length.Fraction( Rand.Float( 0f, 0.7f ) );
-			piss2.Style.Top = Length.Fraction( Rand.Float( 0f, 0.7f ) );
+			piss2.Style.Left = Length.Fraction( Game.Random.Float( 0f, 0.7f ) );
+			piss2.Style.Top = Length.Fraction( Game.Random.Float( 0f, 0.7f ) );
 
 			var piss1 = pissPanel.Add.Panel();
 			piss1.Style.Position = PositionMode.Absolute;
 			piss1.Style.BackgroundImage = Texture.Load( FileSystem.Mounted, "materials/birb_poop/poop1.png" );
 			piss1.Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
-			piss1.Style.Opacity = Rand.Float( 0.4f, 0.7f );
+			piss1.Style.Opacity = Game.Random.Float( 0.4f, 0.7f );
+			piss1.Style.Order = Game.Random.Int( 999999 );
 
-			var piss1Size = Rand.Float( 0.4f, 0.7f );
+			var piss1Size = Game.Random.Float( 0.4f, 0.7f );
 			piss1.Style.Width = Length.Fraction( piss1Size );
 			piss1.Style.Height = Length.Fraction( piss1Size );
 
-			piss1.Style.Left = Length.Fraction( Rand.Float( 0f, 0.7f ) );
-			piss1.Style.Top = Length.Fraction( Rand.Float( 0f, 0.7f ) );
+			piss1.Style.Left = Length.Fraction( Game.Random.Float( 0f, 0.7f ) );
+			piss1.Style.Top = Length.Fraction( Game.Random.Float( 0f, 0.7f ) );
 
 			pissPanel.Style.BackdropFilterBlur = 4f;
 			pissPanel.Style.BackdropFilterSaturate = 1.5f;
@@ -272,11 +273,11 @@ namespace sbox.Community
 
 		private static async Task pissEffects_think()
 		{
-			var cleanEffectsTime = Time.Now + 5;
+			cleanEffectsTime = Time.Now + 5;
 			while ( cleanEffectsTime > Time.Now && pissPanel != null && pissPanel.IsValid() )
 			{
 				pissPanel.Style.Opacity = (cleanEffectsTime - Time.Now).Clamp( 0f, 1f );
-				await Local.Pawn.Task.Delay( 10 );
+				await Game.LocalPawn.Task.Delay( 10 );
 			}
 			if ( pissPanel.IsValid() )
 			{
@@ -291,8 +292,8 @@ namespace sbox.Community
 		{
 			while ( IsValid )
 			{
-				PlaySound( pigeonNoises[Rand.Int( pigeonNoises.Count - 1 )] ).SetVolume( Rand.Float( 0.75f, 1.25f ) ).SetPitch( Rand.Float( 0.9f, 1.15f ) );
-				await Task.Delay( Rand.Int( 600, 1000 ) );
+				PlaySound( pigeonNoises[Game.Random.Int( pigeonNoises.Count - 1 )] ).SetVolume( Game.Random.Float( 0.75f, 1.25f ) ).SetPitch( Game.Random.Float( 0.9f, 1.15f ) );
+				await Task.Delay( Game.Random.Int( 600, 1000 ) );
 			}
 		}
 
@@ -316,9 +317,9 @@ namespace sbox.Community
 
 						if ( isCloseToTheTarget() )
 						{
-							Position = targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Maxs.z);
 							PhysicsBody.Enabled = false;
 							settled = true;
+							//Position = targetPlayer.Position + (Vector3.Up * targetPlayer.PhysicsBody.GetBounds().Size.z);
 							//Parent = targetPlayer;
 
 							pissingTime = Time.Now + 5;
