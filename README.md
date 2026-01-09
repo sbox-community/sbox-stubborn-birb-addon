@@ -1,4 +1,4 @@
 # sbox-stubborn-birb-addon
-Stubborn Birb for Sandbox
+Stubborn Birb scripted entity for Sandbox gamemode on s&box
 
-![Pigeon](https://user-images.githubusercontent.com/48884110/203122620-25793418-699d-4891-88af-23e1adac0c4b.png)
+![Stubborn Birb on sbox.game](https://sbox.game/sboxcommunity/stubbornbirb)

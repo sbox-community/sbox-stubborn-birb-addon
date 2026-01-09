@@ -1,0 +1,17 @@
+{
+  "Title": "Stubborn Birb",
+  "Type": "addon",
+  "Org": "sboxcommunity",
+  "Ident": "stubborn_birb",
+  "Schema": 1,
+  "IncludeSourceFiles": false,
+  "Resources": null,
+  "PackageReferences": [],
+  "EditorReferences": null,
+  "Mounts": null,
+  "IsStandaloneOnly": false,
+  "Metadata": {
+    "StartupScene": "scenes/sandbox.scene",
+    "ParentPackage": "facepunch.sandbox"
+  }
+}
