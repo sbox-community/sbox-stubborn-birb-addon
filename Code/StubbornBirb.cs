@@ -32,6 +32,14 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
     private float orbitRadius = Game.Random.Float( 15f, 30f );
 	//private bool settled = false;
 
+	//Files
+	[Property, Group("Files")] SoundEvent birb_Damage { get; set; }
+	[Property, Group("Files")] SoundEvent birb_Noise { get; set; }
+	[Property, Group("Files")] SoundEvent birb_Poop { get; set; }
+	[Property, Group("Files")] SoundEvent birb_Pooping { get; set; }
+	[Property, Group("Files")] Texture birb_Poop1 { get; set; }
+	[Property, Group("Files")] Texture birb_Poop2 { get; set; }
+
 	enum birb_Task
 	{
 		WaitToSpawn,
@@ -346,8 +354,11 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 		while ( IsValid && GameObject.IsValid )
 		{
 			noise = Sound.Play( "birb_noise" );
-			noise.FollowParent = true;
-			noise.Parent = GameObject;
+			if ( noise != null )
+			{
+				noise.FollowParent = true;
+				noise.Parent = GameObject;
+			}
 
 			await Task.Delay( Game.Random.Int( 3000, 5000 ) );
 		}
@@ -517,7 +528,7 @@ public class PissPanel : PanelComponent
 			Panel.Style.Position = PositionMode.Absolute;
 			var piss2 = Panel.Add.Panel();
 			piss2.Style.Position = PositionMode.Absolute;
-			piss2.Style.BackgroundImage = Texture.LoadFromFileSystem( "materials/birb_poop/poop2.png", FileSystem.Mounted );
+			piss2.Style.BackgroundImage = Texture.LoadFromFileSystem( "materials/birb_poop/poop2.vtex", FileSystem.Mounted );
 			piss2.Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
 			piss2.Style.Opacity = Game.Random.Float( 0.7f, 0.9f );
 			piss2.Style.Order = Game.Random.Int( 999999 );
@@ -531,7 +542,7 @@ public class PissPanel : PanelComponent
 
 			var piss1 = Panel.Add.Panel();
 			piss1.Style.Position = PositionMode.Absolute;
-			piss1.Style.BackgroundImage = Texture.LoadFromFileSystem( "materials/birb_poop/poop1.png", FileSystem.Mounted );
+			piss1.Style.BackgroundImage = Texture.LoadFromFileSystem( "materials/birb_poop/poop1.vtex", FileSystem.Mounted );
 			piss1.Style.BackgroundRepeat = BackgroundRepeat.NoRepeat;
 			piss1.Style.Opacity = Game.Random.Float( 0.4f, 0.7f );
 			piss1.Style.Order = Game.Random.Int( 999999 );
