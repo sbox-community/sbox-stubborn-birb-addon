@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 
 public sealed class StubbornBirb : Component, Component.IDamageable, Component.INetworkSpawn
 {
-	private GameObject target;
-	private SkinnedModelRenderer birdRenderer;
+	[Sync] public GameObject target {  get; set; }
+	[Sync] public bool flapping { get; set; } = false;
+	[Sync] public bool gliding { get; set; } = false;
+	[Sync] public Connection Owner { get; set; }
+	[Sync] public SkinnedModelRenderer birdRenderer { get; set; }
 	private (ModelPhysics modelphysics,Rigidbody rigidbody) targetModelPhysics = new();
 	private Vector3 targetOffset;
 	private Vector3 spawnPoint = Vector3.Zero;
@@ -57,27 +60,25 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 	public enum bird_NetworkMessages
 	{
 		Popping,
+		Sound,
 		Error
-	}
-
-	protected override void OnStart()
-	{
-		Tags.Add( "stubborn_birb" );
-		WorldPosition = WorldPosition + new Vector3( 0, 0, -10000 ); // Start far below the map until initialized
-		birdRenderer = GetComponent<SkinnedModelRenderer>();
-
-		base.OnStart();
 	}
 
 	//protected override void OnStart() // Use a initialization method instead because OnStart is early called before network ownership is assigned, so owner can't be determined
 	private void Init()
 	{
-		//base.OnStart();
+		Tags.Add( "stubborn_birb" );
+		birdRenderer = GetComponent<SkinnedModelRenderer>();
 
-		if ( Networking.IsClient ) // Game.IsClient?
+		if ( IsProxy ) 
 			return;
 
-		if ( Scene.GetAllObjects( true ).Count( x => x.Tags.Has( "stubborn_birb" ) && x.Network.OwnerId == Network.OwnerId ) >= 2 )
+		GetComponent<BoxCollider>().Enabled = false;
+
+		WorldPosition = WorldPosition + new Vector3( 0, 0, -10000 ); // Start far below the map until initialized
+
+
+		if ( Scene.GetAllObjects( true ).Count( x => x.Tags.Has( "stubborn_birb" ) && x.GetComponent<StubbornBirb>().Owner == Owner ) >= 2 )
 		{
 			InfoClient( bird_NetworkMessages.Error, $"You own too many birbs!, max 2" );
 			DestroyGameObject();
@@ -114,12 +115,12 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 		
 		target = _target.foundTargetGO;
 
-		var localBounds = target.GetLocalBounds();
+		var localBounds = target.GetLocalBounds(); //buggy
 		var bounds = localBounds.Size.IsNaN ? BBox.FromPositionAndSize( Vector3.Zero, 100f ) : localBounds;
 
 		if ( IsTargetPlayer )
 		{
-			targetOffset = Vector3.Up * bounds.Size.z;
+			targetOffset = Vector3.Up * (bounds.Size.z < 100f ? bounds.Size.z : 85f);
 		}
 		else
 		{
@@ -145,6 +146,8 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 		task = birb_Task.FlyingToTheTarget;
 
 		WorldPosition = spawnPoint;
+
+		GetComponent<BoxCollider>(true).Enabled = true;
 
 		//Predictable = true;
 
@@ -217,16 +220,16 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 			{
 				if(!birdRenderer.GetBool("gliding") || birdRenderer.GetBool( "flapping" ) )
 				{
-					birdRenderer.Set( "flapping", false );
-					birdRenderer.Set( "gliding", true );
+					flapping = false;
+					gliding = true;
 				}
 			}
 			else
 			{
 				if ( !birdRenderer.GetBool( "flapping" ) || birdRenderer.GetBool( "gliding" ) )
 				{
-					birdRenderer.Set( "flapping", true );
-					birdRenderer.Set( "gliding", false );
+					flapping = true;
+					gliding = false;
 				}
 			}
 
@@ -238,7 +241,6 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 
 		WorldRotation = angles.ToRotation();
 		WorldPosition = position;
-
 	}
 
 	private void Wander()
@@ -308,11 +310,12 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 		pissPP.Transmit = TransmitType.Owner;
 		pissPP.DeleteAsync( 5 );*/
 
-		Sound.Play( "birb_poop", target.WorldPosition );
+		InfoClient( bird_NetworkMessages.Sound, "birb_poop", target );
+		//Sound.Play( "birb_poop", target.WorldPosition );
 	}
 
 	[Rpc.Broadcast]
-	public void InfoClient( bird_NetworkMessages flag, string error = "" )
+	public void InfoClient( bird_NetworkMessages flag, string data = "", GameObject go = null)
 	{
 		switch(flag)
 		{
@@ -333,7 +336,18 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 			}
 			case bird_NetworkMessages.Error:
 			{
-				logger.Error( error );
+				logger.Error( data );
+				break;
+			}
+			case bird_NetworkMessages.Sound:
+			{
+				if( go.IsValid() )
+				{
+					var s = Sound.Play( data );
+					s.FollowParent = true;
+					s.Parent = go;
+				}
+
 				break;
 			}
 			default:
@@ -353,12 +367,13 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 
 		while ( IsValid && GameObject.IsValid )
 		{
-			noise = Sound.Play( "birb_noise" );
-			if ( noise != null )
-			{
-				noise.FollowParent = true;
-				noise.Parent = GameObject;
-			}
+			InfoClient( bird_NetworkMessages.Sound, "birb_noise", GameObject );
+			//noise = Sound.Play( "birb_noise" );
+			//if ( noise != null )
+			//{
+			//	noise.FollowParent = true;
+			//	noise.Parent = GameObject;
+			//}
 
 			await Task.Delay( Game.Random.Int( 3000, 5000 ) );
 		}
@@ -368,6 +383,15 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 	{
 		base.OnUpdate();
 
+		if( birdRenderer  != null )
+		{
+			birdRenderer.Set( "flapping", flapping );
+			birdRenderer.Set( "gliding", gliding );
+		}
+
+		if ( IsProxy )
+			return;
+
 		//Because npc spawner of sandbox gamemode spawns the birb to the front of you
 		if ( !spawned && spawnPoint != Vector3.Zero )
 		{
@@ -375,7 +399,6 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 			WorldPosition = spawnPoint;
 			spawned = true;
 		}
-
 		switch ( task )
 		{
 			case (birb_Task.FlyingToTheTarget):
@@ -394,7 +417,8 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 						{
 							//settled = true;
 							pissingTime = Time.Now + 5;
-							pooping = Sound.Play( "birb_pooping", WorldPosition );
+							InfoClient( bird_NetworkMessages.Sound, "birb_pooping", GameObject );
+							//pooping = Sound.Play( "birb_pooping", WorldPosition );
 							//GetComponent<BoxCollider>().Enabled = false; // When settled, disable collider
 						}
 						else if(mission == birb_Mission.StealProp)
@@ -410,8 +434,16 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 							if ( targetModelPhysics.rigidbody != null )
 								targetModelPhysics.rigidbody.Enabled = false;
 
-							if ( !target.GetLocalBounds().Size.IsNaN)
-								targetOffset = target.GetLocalBounds().ClosestPoint( target.WorldTransform.PointToLocal(WorldPosition) ); // Closest point to the GameObject
+							if ( !target.GetLocalBounds().Size.IsNaN)//buggy
+							{
+								var localBounds = target.GetLocalBounds();
+
+								if ( localBounds.Size.z < 1000 )
+									localBounds = BBox.FromPositionAndSize(Vector3.Zero, 100f);
+
+								targetOffset = localBounds.ClosestPoint( target.WorldTransform.PointToLocal(WorldPosition) ); // Closest point to the GameObject
+
+							}
 
 							WorldPosition = target.WorldPosition + targetOffset;
 
@@ -459,7 +491,8 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 	void IDamageable.OnDamage( in DamageInfo info )
 	{
 		health -= info.Damage;
-		Sound.Play( "birb_damage", WorldPosition );
+		//Sound.Play( "birb_damage", WorldPosition );
+		InfoClient( bird_NetworkMessages.Sound, "birb_damage", GameObject );
 
 		var go = GameObject.Clone( "/prefabs/surface/flesh_bullet.prefab" );
 		go.WorldPosition  = info.Position;
@@ -505,8 +538,8 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 	}
 	public void OnNetworkSpawn( Connection owner )
 	{
-		Network.AssignOwnership( Rpc.Caller );
 		Init();
+		owner = Rpc.Caller;
 	}
 }
 
