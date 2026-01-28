@@ -2,7 +2,7 @@
   "Prefab": "entity/stubborn_birb.prefab",
   "Title": null,
   "Description": null,
-  "IncludeCode": false,
+  "IncludeCode": true,
   "__references": [],
   "__version": 0
 }

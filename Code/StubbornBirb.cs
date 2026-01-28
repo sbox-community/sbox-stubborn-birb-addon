@@ -80,7 +80,7 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 
 		if ( Scene.GetAllObjects( true ).Count( x => x.Tags.Has( "stubborn_birb" ) && x.GetComponent<StubbornBirb>().Owner == Owner ) >= 2 )
 		{
-			InfoClient( bird_NetworkMessages.Error, $"You own too many birbs!, max 2" );
+			InfoClient( bird_NetworkMessages.Error, $"You own too many birbs!, max 1" );
 			DestroyGameObject();
 			return;
 		}
@@ -402,7 +402,7 @@ public sealed class StubbornBirb : Component, Component.IDamageable, Component.I
 		switch ( task )
 		{
 			case (birb_Task.FlyingToTheTarget):
-				if ( IsReachable( from:WorldPosition, to:target.WorldPosition + targetOffset, use_cache: true ) )
+				if ( target != null && target.IsValid() && IsReachable( from:WorldPosition, to:target.WorldPosition + targetOffset, use_cache: true ) )
 				{
 					// Target alive checking could be possible
 
